@@ -1,66 +1,44 @@
 #include <iostream>
 #include <string>
 #include <memory>
-
 using namespace std;
-
-// Define a structure for a Chess Piece
 struct ChessPiece {
-    string type; // "King", "Queen", "Pawn", etc.
-    string color; // "White" or "Black"
-
+    string type;
+    string color; 
     ChessPiece(string t, string c) : type(t), color(c) {}
 };
-
-// Define a node for the Linked List that represents each square on the chessboard
 struct Node {
-    ChessPiece* piece;  // Chess piece at that square
-    Node* next;         // Pointer to the next square (node)
-
+    ChessPiece* piece; 
+    Node* next;     
     Node(ChessPiece* p) : piece(p), next(nullptr) {}
 };
-
-// Class to represent a Chessboard using Linked List
 class ChessBoard {
 private:
-    Node* head;  // Head of the linked list
-
+    Node* head; 
 public:
     ChessBoard() : head(nullptr) {
         initializeBoard();
     }
-
-    // Function to initialize the chessboard with pieces
     void initializeBoard() {
-        // Representing each row as a linked list
         string pieces[] = {"Rook", "Knight", "Bishop", "Queen", "King", "Bishop", "Knight", "Rook"};
-
-        // Set up the black and white pieces on the board
         Node* current = nullptr;
-
-        // Initialize white pieces
         for (int i = 0; i < 8; ++i) {
-            if (i == 0 || i == 7) {  // Rooks
+            if (i == 0 || i == 7) {
                 current = new Node(new ChessPiece(pieces[i], "White"));
-            } else if (i == 1 || i == 6) {  // Knights
+            } else if (i == 1 || i == 6) { 
                 current = new Node(new ChessPiece(pieces[i], "White"));
-            } else if (i == 2 || i == 5) {  // Bishops
+            } else if (i == 2 || i == 5) { 
                 current = new Node(new ChessPiece(pieces[i], "White"));
-            } else if (i == 3) {  // Queen
+            } else if (i == 3) { 
                 current = new Node(new ChessPiece("Queen", "White"));
-            } else {  // King
+            } else { 
                 current = new Node(new ChessPiece("King", "White"));
             }
-
-            // Link the current node to the next node (for a row)
-            // Set next as nullptr for the last square in the row
             if (i != 7) {
                 current->next = new Node(nullptr);
             }
         }
     }
-
-    // Function to print the chessboard
     void printBoard() {
         Node* current = head;
         for (int i = 0; i < 8; ++i) {
@@ -78,8 +56,6 @@ public:
         }
     }
 };
-
-// Main Function to test the chessboard representation
 int main() {
     ChessBoard board;
     board.printBoard();
