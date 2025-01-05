@@ -33,7 +33,7 @@ void print_board(LinkedList& board) {
     }
     cout << "\n" << endl;
 }
-//come-on function for chess board printing
+//come-on function for chess board printing ... it is necessary for printing it
 void come_on(LinkedList& board, bool turn) {
     while (true) {
         int from_r, from_c, to_r, to_c;
