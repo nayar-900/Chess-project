@@ -4,7 +4,6 @@ struct Move {
     int from_r, from_c, to_r, to_c;
     char moved_piece;    
     char captured_piece; 
-    int cap;
 };
 
 stack<Move> undo_stack;
@@ -58,22 +57,32 @@ void redo_move(LinkedList& board, bool& turn) {
 // modified come-on function
 void come_on(LinkedList& board, bool turn) {
     while (true) {
-        int from_r, from_c, to_r, to_c;
-        string command;
+        int choice;
+        cout << "\nEnter your choice:\n";
+        cout << "1. Make a move\n";
+        cout << "2. Undo last move\n";
+        cout << "3. Redo last undone move\n";
+        cout << "Choice: ";
+        cin >> choice;
 
-        cout << "Enter 'undo', 'redo', or make a move (row and column): ";
-        cin >> command;
-
-        if (command == "undo") {
-            undo_move(board, turn);
+        if (choice == 2) { // Undo
+            board.undo_move(board, turn);
             continue;
-        } else if (command == "redo") {
-            redo_move(board, turn);
+        } else if (choice == 3) { // Redo
+            board.redo_move(board, turn);
             continue;
-        } else {
-            from_r = stoi(command);
-            cin >> from_c >> to_r >> to_c;
+        } else if (choice != 1) {
+            cout << "Invalid choice. Please try again." << endl;
+            continue;
         }
+
+        // Input move coordinates
+        int from_r, from_c, to_r, to_c;
+        cout << "Enter the row and column to move from: ";
+        cin >> from_r >> from_c;
+        cout << "Enter the row and column to move to: ";
+        cin >> to_r >> to_c;
+        cout << endl;
 
         from_r = 8 - from_r;
         from_c -= 1;
@@ -120,24 +129,41 @@ void come_on(LinkedList& board, bool turn) {
         }
 
         if (valid) {
+            // Record move
+            Move move;
+            move.from_r = from_r;
+            move.from_c = from_c;
+            move.to_r = to_r;
+            move.to_c = to_c;
+            move.moved_piece = piece;
+            move.captured_piece = to->piece;
 
-            Move move = {from_r, from_c, to_r, to_c, piece, to->piece};
             undo_stack.push(move);
-
             while (!redo_stack.empty()) {
                 redo_stack.pop();
             }
 
+            // Execute move
             from->piece = ' ';
             to->piece = piece;
+            board.printBoard();
 
-            print_board(board);
+            pawn_promotion(to, turn);
+
+            
+            char undo_choice;
+            cout << "Do you want to undo your move? (y/n): ";
+            cin >> undo_choice;
+            if (tolower(undo_choice) == 'y') {
+                board.undo_move(board, turn);
+                continue;  // Skip turn change since move is undone
+            }
+
         } else {
-            cout << "Invalid move! Please enter correct positions." << endl;
+            cout << "Invalid move ... ! Please enter correct positions ..." << endl;
             continue;
         }
 
-        save_game(board, turn);
         turn_change(turn);
     }
 }
