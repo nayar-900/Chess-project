@@ -2,7 +2,8 @@
 #include <cctype>
 using namespace std;
 
-struct Node {
+struct Node
+{
     char piece;
     Node* next;
     Node* prev;
