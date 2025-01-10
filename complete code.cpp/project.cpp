@@ -1,15 +1,30 @@
 #include <iostream>
 #include <cctype>
+#include <stack>
 using namespace std;
 
-struct Node
-{
+struct Node {
     char piece;
     Node* next;
     Node* prev;
     int row, col;
     bool hasMoved;
 };
+
+struct Move {
+    int from_r, from_c, to_r, to_c;
+    char moved_piece;
+    char captured_piece;
+};
+
+void turn_change(bool& turn) {
+    turn = !turn;
+    cout << endl;
+    cout << "Player " << (turn ? 2 : 1) << " turn" << endl;
+}
+
+stack<Move> undo_stack;
+stack<Move> redo_stack;
 
 class LinkedList {
 public:
@@ -51,7 +66,7 @@ public:
         Node* current = head;
         for (int i = 0; i < 8; ++i) {
             for (int j = 0; j < 8; ++j) {
-                cout << "_" << current->piece << "_|";
+                cout << "" << current->piece << "|";
                 current = current->next;
             }
             cout << "  " << 8 - i << endl;
@@ -63,16 +78,57 @@ public:
         cout << endl;
     }
 
+    void undo_move(LinkedList& board, bool& turn) {
+        if (undo_stack.empty()) {
+            cout << "No moves to undo!" << endl;
+            return;
+        }
+
+        Move last_move = undo_stack.top();
+        undo_stack.pop();
+
+        Node* from = board.getNode(last_move.from_r, last_move.from_c);
+        Node* to = board.getNode(last_move.to_r, last_move.to_c);
+
+        from->piece = last_move.moved_piece;
+        to->piece = last_move.captured_piece;
+
+        redo_stack.push(last_move);
+
+        turn_change(turn);
+
+        cout << "Move undone!" << endl;
+        printBoard();
+    }
+
+    void redo_move(LinkedList& board, bool& turn) {
+        if (redo_stack.empty()) {
+            cout << "No moves to redo!" << endl;
+            return;
+        }
+
+        Move last_move = redo_stack.top();
+        redo_stack.pop();
+
+        Node* from = board.getNode(last_move.from_r, last_move.from_c);
+        Node* to = board.getNode(last_move.to_r, last_move.to_c);
+
+        from->piece = ' ';
+        to->piece = last_move.moved_piece;
+
+        undo_stack.push(last_move);
+
+        turn_change(turn);
+
+        cout << "Move redone!" << endl;
+        printBoard();
+    }
+
+
 private:
     Node* head;
     Node* tail;
 };
-
-void turn_change(bool& turn) {
-    turn = !turn;
-    cout << endl;
-    cout << "Player " << (turn ? 2 : 1) << " turn" << endl;
-}
 
 bool valid_move(char piece, bool turn) {
     return turn ? isupper(piece) : islower(piece);
@@ -118,6 +174,10 @@ bool pawn_move(char piece, Node* from, Node* to) {
         }
     }
     return false;
+}
+
+bool is_opponent_piece(char piece, char target_piece) {
+    return (isupper(piece) && islower(target_piece)) || (islower(piece) && isupper(target_piece));
 }
 
 bool knight_move(Node* from, Node* to) {
@@ -173,15 +233,13 @@ bool bishop_move(Node* from, Node* to, LinkedList& board) {
     return false;
 }
 
-bool is_opponent_piece(char piece, char target_piece) {
-    return (isupper(piece) && islower(target_piece)) || (islower(piece) && isupper(target_piece));
-}
-
 bool queen_move(Node* from, Node* to, LinkedList& board) {
+    // Queen can move like a rook or bishop
     return rook_move(from, to, board) || bishop_move(from, to, board);
 }
 
 bool king_move(Node* from, Node* to) {
+    // King can move one square in any direction
     int row_diff = abs(to->row - from->row);
     int col_diff = abs(to->col - from->col);
     return row_diff <= 1 && col_diff <= 1;
@@ -210,6 +268,26 @@ void pawn_promotion(Node* to, bool turn) {
 
 void come_on(LinkedList& board, bool turn) {
     while (true) {
+        int choice;
+        cout << "\nEnter your choice:\n";
+        cout << "1. Make a move\n";
+        cout << "2. Undo last move\n";
+        cout << "3. Redo last undone move\n";
+        cout << "Choice: ";
+        cin >> choice;
+
+        if (choice == 2) { // Undo
+            board.undo_move(board, turn);
+            continue;
+        } else if (choice == 3) { // Redo
+            board.redo_move(board, turn);
+            continue;
+        } else if (choice != 1) {
+            cout << "Invalid choice. Please try again." << endl;
+            continue;
+        }
+
+        // Input move coordinates
         int from_r, from_c, to_r, to_c;
         cout << "Enter the row and column to move from: ";
         cin >> from_r >> from_c;
@@ -262,23 +340,50 @@ void come_on(LinkedList& board, bool turn) {
         }
 
         if (valid) {
+            // Record move
+            Move move;
+            move.from_r = from_r;
+            move.from_c = from_c;
+            move.to_r = to_r;
+            move.to_c = to_c;
+            move.moved_piece = piece;
+            move.captured_piece = to->piece;
+
+            undo_stack.push(move);
+            // Clear redo stack since new move invalidates redo history
+            while (!redo_stack.empty()) {
+                redo_stack.pop();
+            }
+
+            // Execute move
             from->piece = ' ';
             to->piece = piece;
             board.printBoard();
 
             pawn_promotion(to, turn);
+
+            // Ask if the player wants to undo their move
+            char undo_choice;
+            cout << "Do you want to undo your move? (y/n): ";
+            cin >> undo_choice;
+            if (tolower(undo_choice) == 'y') {
+                board.undo_move(board, turn);
+                continue;  // Skip turn change since move is undone
+            }
+
         } else {
-            cout << "Invalid move! Please enter correct positions." << endl;
+            cout << "Invalid move ... ! Please enter correct positions ..." << endl;
             continue;
         }
 
-        turn_change(turn); 
+        turn_change(turn);
     }
 }
 
+
 int main() {
     LinkedList board(8);
-    cout << endl << "Welcome to play the most amazing game of chess!" << endl << endl;
+    cout << endl << "Welcome to chess ... !" << endl << endl;
     cout << "Player 1 = small pieces" << endl;
     cout << "Player 2 = large pieces" << endl << endl;
     init(board);
@@ -288,3 +393,4 @@ int main() {
     come_on(board, turn);
     return 0;
 }
+Complete code
