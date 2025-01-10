@@ -13,7 +13,8 @@ void promote_pawn(Node* pawn, bool turn) {
         promotion_piece = toupper(promotion_piece);
     }
 
-    if (!turn) {
+    if (!turn) 
+    {
         promotion_piece = tolower(promotion_piece);
     }
     pawn->piece = promotion_piece;
