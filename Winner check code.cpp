@@ -6,7 +6,8 @@ bool is_game_over(LinkedList& board, bool turn) {
                 Node* from = board.getNode(i, j);
                 char piece = from->piece;
 
-                if (piece == ' ' || (turn && islower(piece)) || (!turn && isupper(piece))) {
+                if (piece == ' ' || (turn && islower(piece)) || (!turn && isupper(piece))) 
+                {
                     continue;
                 }
 
