@@ -55,7 +55,8 @@ bool castling_move(Node* king, Node* rook, LinkedList& board) {
     return false;
 }
 // modified come-on function
-void come_on(LinkedList& board, bool turn) {
+void come_on(LinkedList& board, bool turn) 
+{
     while (true) {
         int from_r, from_c, to_r, to_c;
         cout << "Enter the row and column to move from: ";
