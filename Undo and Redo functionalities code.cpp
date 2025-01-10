@@ -4,6 +4,7 @@ struct Move {
     int from_r, from_c, to_r, to_c;
     char moved_piece;    
     char captured_piece; 
+    int cap;
 };
 
 stack<Move> undo_stack;
