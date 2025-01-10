@@ -20,7 +20,6 @@ void print_board(LinkedList& board) {
         }
         cout << " " << 8 - i << endl;
     }
-
     cout << "  +";
     for (int j = 0; j < 8; ++j) {
         cout << "---+";
