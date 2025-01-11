@@ -1,5 +1,6 @@
 // Function to print the chessboard
-void print_board(LinkedList& board) {
+void print_board(LinkedList& board) 
+{
     cout << "\n  ";
     for (int i = 1; i <= 8; ++i) {
         cout << "  " << i << " ";
