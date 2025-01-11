@@ -1,6 +1,7 @@
 #include <iostream>
 #include <cctype>
 #include <stack>
+
 using namespace std;
 
 struct Node {
