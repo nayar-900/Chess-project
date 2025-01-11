@@ -1,5 +1,6 @@
 #include <iostream>
 using namespace std;
+
 void turn_change (bool &turn)
 {
 if (turn == 0)
