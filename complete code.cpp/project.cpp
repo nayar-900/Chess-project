@@ -5,6 +5,7 @@
 #include <vector>     
 using namespace std;
 
+
 unordered_map <string, int> board_state_count;
 
 bool white_king_moved = false;
