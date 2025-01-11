@@ -1,4 +1,4 @@
-//function
+
 void promote_pawn(Node* pawn, bool turn) {
     char promotion_piece;
     cout << "Your pawn has reached the last rank!" << endl;
