@@ -1,5 +1,4 @@
 #include <stack>
-
 struct Move {
     int from_r, from_c, to_r, to_c;
     char moved_piece;    
