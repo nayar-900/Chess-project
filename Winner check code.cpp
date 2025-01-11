@@ -1,4 +1,4 @@
-//function
+
 bool is_game_over(LinkedList& board, bool turn) {
     if (is_king_in_check(board, turn)) {
         for (int i = 0; i < 8; ++i) {
