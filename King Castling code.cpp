@@ -17,7 +17,8 @@ bool is_castling_valid(Node* king, Node* rook, LinkedList& board, bool turn) {
         return false;
     }
 
-    if (!is_path_clear_castling(king, rook, board)) {
+    if (!is_path_clear_castling(king, rook, board)) 
+    {
         return false;
     }
     int direction = (rook->col > king->col) ? 1 : -1;
