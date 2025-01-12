@@ -4,6 +4,7 @@
 #include <unordered_map>
 #include <vector>
 //#include <fstream>
+
 using namespace std;
 
 unordered_map <string, int> board_state_count;
