@@ -136,7 +136,8 @@ void come_on(LinkedList& board, bool turn)
 
             undo_stack.push({from_r, from_c, to_r, to_c, to->piece, captured_piece});
 
-            while (!redo_stack.empty()) {
+            while (!redo_stack.empty()) 
+            {
                 redo_stack.pop();
             }
 
