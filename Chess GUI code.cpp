@@ -6,6 +6,9 @@
 #include <vector>
 #include <string>
 #include <iostream>
+#include <mmsystem.h>
+#pragma comment(lib, "winmm.lib")
+
 
 #define MAX_LOADSTRING 100
 #define BOARD_SIZE 8
@@ -24,6 +27,8 @@ std::map<std::wstring, std::wstring> pieceArt = {
 HINSTANCE hInst;
 WCHAR szTitle[MAX_LOADSTRING];
 WCHAR szWindowClass[MAX_LOADSTRING];
+POINT whiteKingPos = { 4, 7 }; // Initially on E1 (0-indexed)
+POINT blackKingPos = { 4, 0 }; // Initially on E8 (0-indexed)
 
 HWND hWndMain; // Handle to the main window
 
@@ -31,6 +36,7 @@ HWND hWndMain; // Handle to the main window
 std::vector<std::wstring> chessboard(BOARD_SIZE* BOARD_SIZE, L""); // Board with pieces
 POINT selectedPiece = { -1, -1 }; // Selected piece coordinates
 bool playerTurn = false; // 0 for player 1 (white), 1 for player 2 (black)
+std::vector<POINT> validMoves;
 
 // Forward declarations
 ATOM MyRegisterClass(HINSTANCE hInstance);
@@ -137,6 +143,12 @@ void InitializeChessboard() {
 }
 
 // Add this function to draw the turn message
+
+bool IsMoveCapturingKing(POINT to) {
+    std::wstring piece = chessboard[to.y * BOARD_SIZE + to.x];
+    return piece[0] == L'K';
+}
+
 void DrawTurnMessage(HDC hdc) {
     // Set up the font for the message
     HFONT hFont = CreateFont(
@@ -173,11 +185,39 @@ void DrawTurnMessage(HDC hdc) {
     DeleteObject(hFont);
 }
 
+void CalculateValidMoves(POINT from) {
+    validMoves.clear();
+    for (int y = 0; y < BOARD_SIZE; ++y) {
+        for (int x = 0; x < BOARD_SIZE; ++x) {
+            POINT to = { x, y };
+            if (ValidMove(from, to)) {
+                validMoves.push_back(to);
+            }
+        }
+    }
+}
+
 void DrawChessboard(HDC hdc) {
     for (int row = 0; row < BOARD_SIZE; ++row) {
         for (int col = 0; col < BOARD_SIZE; ++col) {
             RECT cell = { col * CELL_SIZE, row * CELL_SIZE, (col + 1) * CELL_SIZE, (row + 1) * CELL_SIZE };
-            HBRUSH brush = CreateSolidBrush((row + col) % 2 == 0 ? RGB(240, 217, 181) : RGB(181, 136, 99));
+            HBRUSH brush;
+
+            bool isValidMove = false;
+            for (const auto& move : validMoves) {
+                if (move.x == col && move.y == row) {
+                    isValidMove = true;
+                    break;
+                }
+            }
+
+            if (isValidMove) {
+                brush = CreateSolidBrush(RGB(255, 185, 120));
+            }
+            else {
+                brush = CreateSolidBrush((row + col) % 2 == 0 ? RGB(240, 217, 181) : RGB(181, 136, 99));
+            }
+
             FillRect(hdc, &cell, brush);
             DeleteObject(brush);
 
@@ -232,13 +272,20 @@ void DrawPiece(HDC hdc, int row, int col, const std::wstring& piece) {
     DeleteObject(hFont);
 }
 
+void PlaySoundEffect(LPCWSTR soundFile) {
+    PlaySound(soundFile, NULL, SND_FILENAME | SND_ASYNC);
+}
 
 bool IsPlayerPiece(POINT position) {
     std::wstring piece = chessboard[position.y * BOARD_SIZE + position.x];
+    if (piece.empty()) return false; // Add this line to handle empty squares
     return (playerTurn == (piece.back() == L'B')); // Check if the piece belongs to the current player
 }
 
+
 bool ValidMove(POINT from, POINT to) {
+    if (chessboard[from.y * BOARD_SIZE + from.x].empty()) return false; // Prevent moving from an empty square
+
     if (!IsPlayerPiece(from)) {
         return false; // Only allow the player to move their own pieces
     }
@@ -250,11 +297,12 @@ bool ValidMove(POINT from, POINT to) {
     bool isWhite = (piece.back() == L'W');
     std::wstring destinationPiece = chessboard[to.y * BOARD_SIZE + to.x];
 
+    // Check if the move is capturing the king
+    if (IsMoveCapturingKing(to)) return false; // Prevent capturing the king
+
     // Rook movement (Horizontal/Vertical)
     if (pieceType == L'R') {
-        if (from.x != to.x && from.y != to.y) {
-            return false; // Rook can only move in a straight line
-        }
+        if (from.x != to.x && from.y != to.y) return false; // Rook can only move in a straight line
         // Check if the path is blocked
         int stepX = (to.x > from.x) ? 1 : (to.x < from.x) ? -1 : 0;
         int stepY = (to.y > from.y) ? 1 : (to.y < from.y) ? -1 : 0;
@@ -275,39 +323,29 @@ bool ValidMove(POINT from, POINT to) {
 
     // Bishop movement (Diagonal)
     else if (pieceType == L'B') {
-        if (abs(from.x - to.x) != abs(from.y - to.y)) {
-            return false; // Bishop moves diagonally
-        }
+        if (abs(from.x - to.x) != abs(from.y - to.y)) return false; // Bishop moves diagonally
         // Check if the path is blocked
         int stepX = (to.x > from.x) ? 1 : -1;
         int stepY = (to.y > from.y) ? 1 : -1;
         for (int i = 1; i < abs(to.x - from.x); ++i) {
-            if (!chessboard[(from.y + i * stepY) * BOARD_SIZE + (from.x + i * stepX)].empty()) {
-                return false; // Path is blocked
-            }
+            if (!chessboard[(from.y + i * stepY) * BOARD_SIZE + (from.x + i * stepX)].empty()) return false; // Path is blocked
         }
     }
 
     // Queen movement (Combination of Rook and Bishop)
     else if (pieceType == L'Q') {
         if ((from.x != to.x && from.y != to.y) &&
-            abs(from.x - to.x) != abs(from.y - to.y)) {
-            return false; // Queen moves like a rook or bishop
-        }
+            abs(from.x - to.x) != abs(from.y - to.y)) return false; // Queen moves like a rook or bishop
         int stepX = (to.x > from.x) ? 1 : (to.x < from.x) ? -1 : 0;
         int stepY = (to.y > from.y) ? 1 : (to.y < from.y) ? -1 : 0;
         for (int i = 1; i < max(abs(to.x - from.x), abs(to.y - from.y)); ++i) {
-            if (!chessboard[(from.y + i * stepY) * BOARD_SIZE + (from.x + i * stepX)].empty()) {
-                return false; // Path is blocked
-            }
+            if (!chessboard[(from.y + i * stepY) * BOARD_SIZE + (from.x + i * stepX)].empty()) return false; // Path is blocked
         }
     }
 
     // King movement (One square in any direction)
     else if (pieceType == L'K') {
-        if (abs(from.x - to.x) > 1 || abs(from.y - to.y) > 1) {
-            return false; // King moves one square in any direction
-        }
+        if (abs(from.x - to.x) > 1 || abs(from.y - to.y) > 1) return false; // King moves one square in any direction
     }
 
     // Pawn movement (One square forward, two squares on the first move, capture diagonally)
@@ -333,10 +371,60 @@ bool ValidMove(POINT from, POINT to) {
     return destinationPiece.empty() || destinationPiece.back() != piece.back();
 }
 
+bool IsKingInCheck(POINT kingPos, bool isWhite) {
+    for (int y = 0; y < BOARD_SIZE; ++y) {
+        for (int x = 0; x < BOARD_SIZE; ++x) {
+            POINT opponentPos = { x, y };
+            std::wstring piece = chessboard[y * BOARD_SIZE + x];
+
+            if (piece.empty() || piece.back() == (isWhite ? L'W' : L'B')) continue;
+
+            if (ValidMove(opponentPos, kingPos)) return true;
+        }
+    }
+    return false;
+}
+
 void MovePiece(POINT from, POINT to) {
     if (ValidMove(from, to)) {
-        chessboard[to.y * BOARD_SIZE + to.x] = chessboard[from.y * BOARD_SIZE + from.x];
+        std::wstring movingPiece = chessboard[from.y * BOARD_SIZE + from.x];
+        std::wstring capturedPiece = chessboard[to.y * BOARD_SIZE + to.x];
+
+        // Temporarily move the piece
+        chessboard[to.y * BOARD_SIZE + to.x] = movingPiece;
         chessboard[from.y * BOARD_SIZE + from.x] = L"";
+
+        // Update king positions if a king is moved
+        if (movingPiece[0] == L'K') {
+            if (movingPiece.back() == L'W') {
+                whiteKingPos = to;
+            }
+            else {
+                blackKingPos = to;
+            }
+        }
+
+        // Check for king in check
+        bool isKingInCheck = (movingPiece.back() == L'W')
+            ? IsKingInCheck(whiteKingPos, true)
+            : IsKingInCheck(blackKingPos, false);
+
+        if (isKingInCheck) {
+            // Revert the move if it places the king in check
+            chessboard[from.y * BOARD_SIZE + from.x] = movingPiece;
+            chessboard[to.y * BOARD_SIZE + to.x] = capturedPiece;
+            std::wcout << L"Move places the king in check. Move invalid!" << std::endl;
+            return;
+        }
+
+        // Play capture sound if capturing a piece
+        if (!capturedPiece.empty()) {
+            PlaySoundEffect(L"capture.wav");
+        }
+        else {
+            PlaySoundEffect(L"move.wav");
+        }
+
         TurnChange(playerTurn);
     }
 }
@@ -362,12 +450,15 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 
         if (selectedPiece.x == -1 && selectedPiece.y == -1) {
             selectedPiece = { x, y };
+            CalculateValidMoves(selectedPiece); // Calculate valid moves for the selected piece
         }
         else {
             MovePiece(selectedPiece, { x, y });
             selectedPiece = { -1, -1 };
+            validMoves.clear(); // Clear valid moves after a move is made
             InvalidateRect(hWnd, nullptr, TRUE);
         }
+        InvalidateRect(hWnd, nullptr, TRUE); // Redraw the board to show the valid moves
     }
                        break;
 
@@ -380,3 +471,4 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
     }
     return 0;
 }
+
