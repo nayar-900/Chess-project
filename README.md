@@ -1,7 +1,7 @@
 # Chess Game Implementation
 
 This repository contains a C++ implementation of a basic chess game using linked lists and stacks. The game includes features such as move validation, undo/redo functionality, and castling. Below is a detailed breakdown of the project, its components, and how to use it.
-
+..
 ## Features
 - **Chessboard Representation**: The board is implemented as a doubly linked list.
 - **Move Validation**: Includes specific logic for each chess piece.
