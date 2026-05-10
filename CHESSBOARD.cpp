@@ -54,7 +54,7 @@ public:
             cout << endl;
             current = head;
         }
-    }
+    
 };
 int main() {
     ChessBoard board;
