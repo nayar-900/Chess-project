@@ -34,7 +34,7 @@ A fully functional CLI chess engine built in C++ as a Programming Fundamentals p
 ```text
 Language        →  C++17 — no external libraries, stdlib only
 Board Model     →  Doubly linked list (64 Node objects, bidirectional traversal)
-Move History    →  Stack-based undo / redo across the full game
+Move History    →  Stack-based undo/redo across the full game
 Validation      →  Per-piece legal move logic + castling + repetition detection
 Players         →  Two-player local — uppercase (White) vs lowercase (Black)
 ```
