@@ -111,7 +111,7 @@ stack<Move> undoStack;   // push on every executed move
 stack<Move> redoStack;   // populated when undoing; cleared on new move
 ```
 
-### Board State Tracking — Hash Map
+### Board State Tracking — Hash Map 
 
 ```cpp
 unordered_map<string, int> board_state_count;
